@@ -10,7 +10,7 @@ dotenv.config({
 //Connecting to database
 connectDatabase();
 
-const server = app.listen(process.env.PORT, () => {
+const server = app.listen(process.env.PORT || 4000, () => {
   console.log(
     `Server starting on PORT: ${process.env.PORT} in ${process.env.NODE_ENV} mode.`
   );
