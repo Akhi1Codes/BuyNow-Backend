@@ -35,11 +35,12 @@ module.exports = app;
 const url = `https://buynow-backend-iasj.onrender.com`;
 const interval = 30000; // Interval in milliseconds (30 seconds)
 
-//Reloader Function
 function reloadWebsite() {
-  axios
-    .get(url)
+  fetch(url)
     .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
       console.log(
         `Reloaded at ${new Date().toISOString()}: Status Code ${
           response.status
