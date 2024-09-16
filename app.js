@@ -39,6 +39,18 @@ function reloadWebsite() {
   fetch(url)
     .then((response) => {
       if (!response.ok) {
+        // Specific handling for 404 errors
+        if (response.status === 404) {
+          console.warn(
+            `Resource not found (404) at ${new Date().toISOString()}: ${url}`
+          );
+        } else {
+          console.error(
+            `HTTP error! Status: ${
+              response.status
+            } at ${new Date().toISOString()}`
+          );
+        }
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       console.log(
@@ -55,4 +67,5 @@ function reloadWebsite() {
     });
 }
 
+// Call reloadWebsite at specified intervals
 setInterval(reloadWebsite, interval);
