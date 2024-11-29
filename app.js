@@ -13,6 +13,7 @@ app.use(fileUpload());
 app.use(
   cors({ origin: "https://buynow-66f3.onrender.com", credentials: true })
 );
+app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ limit: "5mb", extended: true }));
