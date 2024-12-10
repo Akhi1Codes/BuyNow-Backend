@@ -5,7 +5,6 @@ const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
 
 //Create new order => /api/v1/order/new
 exports.newOrder = catchAsyncErrors(async (req, res, next) => {
-  console.log(req.body);
   const {
     shippingInfo,
     orderItems,

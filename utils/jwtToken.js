@@ -9,6 +9,10 @@ const sendToken = (user, statusCode, res) => {
     expires: new Date(
       Date.now() + process.env.COOKIE_EXPIRES_TIME * 24 * 60 * 60 * 1000
     ),
+    secure: process.env.NODE_ENV === "PRODUCTION",
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === "PRODUCTION" ? "None" : "Lax",
+    domain: process.env.NODE_ENV === "PRODUCTION" ? ".onrender.com" : undefined,
   };
   res.status(statusCode).cookie("token", token, options).json({
     success: true,
