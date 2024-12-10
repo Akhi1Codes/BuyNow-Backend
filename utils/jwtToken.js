@@ -12,7 +12,10 @@ const sendToken = (user, statusCode, res) => {
     secure: process.env.NODE_ENV === "PRODUCTION",
     httpOnly: true,
     sameSite: process.env.NODE_ENV === "PRODUCTION" ? "None" : "Lax",
-    domain: process.env.NODE_ENV === "PRODUCTION" ? ".onrender.com" : undefined,
+    domain:
+      process.env.NODE_ENV === "PRODUCTION"
+        ? "buynow-66f3.onrender.com"
+        : undefined,
   };
   res.status(statusCode).cookie("token", token, options).json({
     success: true,
