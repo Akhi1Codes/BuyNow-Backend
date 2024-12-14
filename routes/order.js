@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const {
+  checkOut,
   newOrder,
   getSingleOrder,
   myOrder,
@@ -12,6 +13,7 @@ const {
 
 const { isAuthenticated, authorizeRoles } = require("../middlewares/auth");
 
+router.route("/checkout").post(isAuthenticated, checkOut);
 router.route("/order/new").post(isAuthenticated, newOrder);
 router.route("/order/:id").get(isAuthenticated, getSingleOrder);
 router.route("/orders/me").get(isAuthenticated, myOrder);

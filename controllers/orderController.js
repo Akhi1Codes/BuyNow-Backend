@@ -2,6 +2,38 @@ const Order = require("../models/order");
 const Product = require("../models/product");
 const ErrorHandler = require("../utils/errorhandler");
 const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
+const stripe = require("stripe")(process.env.STRIPE_API_KEY);
+
+// Stripe Checkout => /api/v1/checkout
+exports.checkOut = catchAsyncErrors(async (req, res, next) => {
+  const line_items = req.body.line_items.map((item) => ({
+    price_data: {
+      currency: "usd",
+      product_data: {
+        name: item.product_name,
+      },
+      unit_amount: item.price * 100,
+    },
+    quantity: item.quantity,
+  }));
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      line_items: line_items,
+      mode: "payment",
+      success_url: "http://localhost:5173/success",
+      cancel_url: "http://localhost:5173/cancel",
+    });
+    res.status(201).json({
+      success: true,
+      sessionId: session.id,
+      paymentUrl: session.url,
+    });
+  } catch (error) {
+    console.error("Stripe Error:", error);
+    next(error);
+  }
+});
 
 //Create new order => /api/v1/order/new
 exports.newOrder = catchAsyncErrors(async (req, res, next) => {

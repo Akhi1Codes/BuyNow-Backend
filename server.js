@@ -1,11 +1,9 @@
-const app = require("./app");
-const dotenv = require("dotenv");
-const connectDatabase = require("./config/database");
-const cloudinary = require("cloudinary");
-//Setting up config file
-dotenv.config({
+require("dotenv").config({
   path: "config/config.env",
 });
+const app = require("./app");
+const connectDatabase = require("./config/database");
+const cloudinary = require("cloudinary");
 
 //Connecting to database
 connectDatabase();
