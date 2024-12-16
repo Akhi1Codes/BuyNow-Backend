@@ -1,5 +1,4 @@
 const express = require("express");
-const path = require("path");
 const app = express();
 const errorMiddleware = require("./middlewares/errors");
 const cookieParser = require("cookie-parser");
@@ -21,11 +20,6 @@ app.use(
     credentials: true, // Allow cookies to be sent in cross-origin requests
   })
 );
-
-app.use(express.static(path.join(__dirname, "build")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "build", "index.html"));
-});
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ limit: "5mb", extended: true }));
