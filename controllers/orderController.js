@@ -17,12 +17,56 @@ exports.checkOut = catchAsyncErrors(async (req, res, next) => {
     quantity: item.quantity,
   }));
 
+  const taxAmount = req.body.tax.amount;
+  const shippingAmount = req.body.shipping.shippingAmount;
+
   try {
     const session = await stripe.checkout.sessions.create({
-      line_items: line_items,
+      line_items: [
+        ...line_items,
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Tax",
+            },
+            unit_amount: taxAmount * 100,
+          },
+          quantity: 1,
+        },
+      ],
       mode: "payment",
-      success_url: "http://localhost:5173/success",
-      cancel_url: "http://localhost:5173/cancel",
+      success_url:
+        process.env.NODE_ENV === "PRODUCTION"
+          ? "https://buynow-66f3.onrender.com"
+          : "http://localhost:5173",
+      cancel_url:
+        process.env.NODE_ENV === "PRODUCTION"
+          ? "https://buynow-66f3.onrender.com"
+          : "http://localhost:5173",
+
+      shipping_options: [
+        {
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: {
+              amount: shippingAmount * 100,
+              currency: "usd",
+            },
+            display_name: "Standard Shipping",
+            delivery_estimate: {
+              minimum: {
+                unit: "business_day",
+                value: 5,
+              },
+              maximum: {
+                unit: "business_day",
+                value: 7,
+              },
+            },
+          },
+        },
+      ],
     });
     res.status(201).json({
       success: true,
