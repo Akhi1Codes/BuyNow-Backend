@@ -38,8 +38,8 @@ exports.checkOut = catchAsyncErrors(async (req, res, next) => {
       mode: "payment",
       success_url:
         process.env.NODE_ENV === "PRODUCTION"
-          ? "https://buynow-66f3.onrender.com"
-          : "http://localhost:5173",
+          ? "https://buynow-66f3.onrender.com/success"
+          : "http://localhost:5173/success",
       cancel_url:
         process.env.NODE_ENV === "PRODUCTION"
           ? "https://buynow-66f3.onrender.com"
