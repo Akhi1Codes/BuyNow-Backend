@@ -12,11 +12,6 @@ app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 app.use(fileUpload());
 
-app.use(express.static(path.join(__dirname, "build")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "build", "index.html"));
-});
-
 app.use(
   cors({
     origin:
@@ -26,6 +21,11 @@ app.use(
     credentials: true, // Allow cookies to be sent in cross-origin requests
   })
 );
+
+app.use(express.static(path.join(__dirname, "build")));
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ limit: "5mb", extended: true }));
