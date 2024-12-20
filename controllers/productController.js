@@ -5,8 +5,30 @@ const APIFeatures = require("../utils/apifeatures");
 
 //Create new product => /api/v1/product/new
 exports.newProduct = catchAsyncErrors(async (req, res, next) => {
-  req.body[0].user = req.user.id;
-  const product = await Product.create(req.body);
+  const { name, description, price, category, image } = req.body;
+
+  const result = await cloudinary.v2.uploader.upload(image, {
+    folder: "products",
+    width: 500,
+    height: 500,
+    gravity: "auto",
+    crop: "thumb",
+    quality: "auto",
+    resource_type: "image",
+  });
+
+  const product = await Product.create({
+    name,
+    description,
+    price,
+    category,
+    image: {
+      public_id: result.public_id,
+      url: result.secure_url,
+    },
+    user: req.user.id,
+  });
+
   res.status(201).json({
     success: true,
     product,
@@ -16,7 +38,7 @@ exports.newProduct = catchAsyncErrors(async (req, res, next) => {
 //Get all the product => /api/v1/products
 exports.getProducts = catchAsyncErrors(async (req, res, next) => {
   const resPerPage = 10;
-  const productCount = await Product.countDocuments;
+  const productCount = Product.countDocuments;
   const apiFeatures = new APIFeatures(Product.find(), req.query)
     .search()
     .filter()
