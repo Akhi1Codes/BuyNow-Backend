@@ -88,7 +88,7 @@ const orderSchema = mongoose.Schema({
   orderStatus: {
     type: String,
     required: true,
-    default: "Processing",
+    default: "Order Confirmed",
   },
   deliveredAt: {
     type: Date,
