@@ -5,30 +5,50 @@ const APIFeatures = require("../utils/apifeatures");
 
 //Create new product => /api/v1/product/new
 exports.newProduct = catchAsyncErrors(async (req, res, next) => {
-  const { name, description, price, category, image } = req.body;
-
-  const result = await cloudinary.v2.uploader.upload(image, {
-    folder: "products",
-    width: 500,
-    height: 500,
-    gravity: "auto",
-    crop: "thumb",
-    quality: "auto",
-    resource_type: "image",
-  });
-
+  const {
+    name,
+    description,
+    price,
+    category,
+    images,
+    seller,
+    stock,
+    ratings,
+    reviews,
+  } = req.body;
+  // Upload the product images to Cloudinary (we can assume that `images` is an array of image URLs)
+  const imageResults = await Promise.all(
+    images.map((image) =>
+      cloudinary.v2.uploader.upload(image, {
+        folder: "products",
+        width: 500,
+        height: 500,
+        gravity: "auto",
+        crop: "thumb",
+        quality: "auto",
+        resource_type: "image",
+      })
+    )
+  );
+  // Prepare image data for storage
+  const uploadedImages = imageResults.map((result) => ({
+    public_id: result.public_id,
+    url: result.secure_url,
+  }));
+  // Create the product
   const product = await Product.create({
     name,
     description,
     price,
     category,
-    image: {
-      public_id: result.public_id,
-      url: result.secure_url,
-    },
+    images: uploadedImages,
+    seller,
+    stock,
+    ratings,
+    numofReviews: reviews ? reviews.length : 0,
+    reviews,
     user: req.user.id,
   });
-
   res.status(201).json({
     success: true,
     product,
