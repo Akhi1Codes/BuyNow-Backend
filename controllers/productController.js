@@ -27,6 +27,7 @@ exports.newProduct = catchAsyncErrors(async (req, res, next) => {
         crop: "thumb",
         quality: "auto",
         resource_type: "image",
+        format: "webp",
       })
     )
   );

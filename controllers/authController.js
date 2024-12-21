@@ -18,6 +18,7 @@ exports.registerUser = catchAsyncErrors(async (req, res, next) => {
     crop: "thumb",
     quality: "auto",
     resource_type: "image",
+    format: "webp",
   });
 
   const user = await User.create({
