@@ -2,200 +2,203 @@ const Product = require("../models/product");
 const ErrorHandler = require("../utils/errorhandler");
 const catchAsyncErrors = require("../middlewares/catchAsyncErrors");
 const APIFeatures = require("../utils/apifeatures");
+const cloudinary = require("cloudinary");
 
 //Create new product => /api/v1/product/new
 exports.newProduct = catchAsyncErrors(async (req, res, next) => {
-  const {
-    name,
-    description,
-    price,
-    category,
-    images,
-    seller,
-    stock,
-    ratings,
-    reviews,
-  } = req.body;
-  // Upload the product images to Cloudinary (we can assume that `images` is an array of image URLs)
-  const imageResults = await Promise.all(
-    images.map((image) =>
-      cloudinary.v2.uploader.upload(image, {
-        folder: "products",
-        width: 500,
-        height: 500,
-        gravity: "auto",
-        crop: "thumb",
-        quality: "auto",
-        resource_type: "image",
-        format: "webp",
-      })
-    )
-  );
-  // Prepare image data for storage
-  const uploadedImages = imageResults.map((result) => ({
-    public_id: result.public_id,
-    url: result.secure_url,
-  }));
-  // Create the product
-  const product = await Product.create({
-    name,
-    description,
-    price,
-    category,
-    images: uploadedImages,
-    seller,
-    stock,
-    ratings,
-    numofReviews: reviews ? reviews.length : 0,
-    reviews,
-    user: req.user.id,
-  });
-  res.status(201).json({
-    success: true,
-    product,
-  });
+    const {
+        name,
+        description,
+        price,
+        category,
+        images,
+        seller,
+        stock,
+    } = req.body;
+
+    const imageResults = await Promise.all(
+        images.map((image) =>
+            cloudinary.v2.uploader.upload(image, {
+                folder: "products",
+                width: 500,
+                height: 500,
+                gravity: "auto",
+                crop: "thumb",
+                quality: "auto",
+                resource_type: "image",
+                format: "webp",
+            })
+        )
+    );
+
+    const uploadedImages = imageResults.length === 1
+        ? [{
+            public_id: imageResults[0].public_id,
+            url: imageResults[0].secure_url,
+        }]
+        : imageResults.map((result) => ({
+            public_id: result.public_id,
+            url: result.secure_url,
+        }));
+
+    const product = await Product.create({
+        name,
+        description,
+        price,
+        category,
+        images: uploadedImages,
+        seller,
+        stock,
+        user: req.user.id,
+    });
+    res.status(201).json({
+        success: true,
+        product,
+    });
 });
 
 //Get all the product => /api/v1/products
 exports.getProducts = catchAsyncErrors(async (req, res, next) => {
-  const resPerPage = 10;
-  const productCount = Product.countDocuments;
-  const apiFeatures = new APIFeatures(Product.find(), req.query)
-    .search()
-    .filter()
-    .pagination(resPerPage);
-  const products = await apiFeatures.query;
-  res.status(200).json({
-    success: true,
-    count: products.length,
-    productCount,
-    products,
-  });
+    const resPerPage = 10;
+    const productCount = Product.countDocuments;
+    const apiFeatures = new APIFeatures(Product.find(), req.query)
+        .search()
+        .filter()
+        .pagination(resPerPage);
+    const products = await apiFeatures.query;
+    res.status(200).json({
+        success: true,
+        count: products.length,
+        productCount,
+        products,
+    });
 });
 
 //Get a single product => /api/v1/product/id
 exports.getSingleProduct = catchAsyncErrors(async (req, res, next) => {
-  const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id);
 
-  if (!product) {
-    return next(new ErrorHandler("Product not found", 400));
-  }
-  res.status(200).json({
-    success: true,
-    product,
-  });
+    if (!product) {
+        return next(new ErrorHandler("Product not found", 400));
+    }
+    res.status(200).json({
+        success: true,
+        product,
+    });
 });
 
 //Update product => /api/v1/product/id
 exports.updateProduct = catchAsyncErrors(async (req, res, next) => {
-  let product = await Product.findById(req.params.id);
+    let product = await Product.findById(req.params.id);
 
-  if (!product) {
-    return next(new ErrorHandler("Product not found", 400));
-  }
+    if (!product) {
+        return next(new ErrorHandler("Product not found", 400));
+    }
 
-  product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-    useFindAndModify: false,
-  });
+    product = await Product.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+        runValidators: true,
+        useFindAndModify: false,
+    });
 
-  res.status(200).json({
-    success: true,
-    product,
-  });
+    res.status(200).json({
+        success: true,
+        product,
+    });
 });
 
 //Delete product => /api/v1/product/id
 exports.deleteProduct = catchAsyncErrors(async (req, res, next) => {
-  const product = await Product.findById(req.params.id);
+    const product = await Product.findById(req.params.id);
 
-  if (!product) {
-    return next(new ErrorHandler("Product not found", 400));
-  }
+    if (!product) {
+        return next(new ErrorHandler("Product not found", 400));
+    }
+    for (let image of product.images) {
+        await cloudinary.v2.uploader.destroy(image.public_id);
+    }
+    await product.deleteOne();
 
-  await product.deleteOne();
-
-  res.status(200).json({
-    success: true,
-    message: "Product is deleted",
-  });
+    res.status(200).json({
+        success: true,
+        message: "Product is deleted",
+    });
 });
 
 //Create new review => /api/v1/review
 exports.createProductReview = catchAsyncErrors(async (req, res, next) => {
-  const { rating, comment, productId } = req.body;
-  const review = {
-    user: req.user._id,
-    name: req.user.name,
-    rating: Number(rating),
-    comment,
-  };
-  const product = await Product.findById(productId);
-  const isReviewed = product.reviews.find(
-    (r) => r.user?.toString() === req.user._id?.toString()
-  );
+    const {rating, comment, productId} = req.body;
+    const review = {
+        user: req.user._id,
+        name: req.user.name,
+        rating: Number(rating),
+        comment,
+    };
+    const product = await Product.findById(productId);
+    const isReviewed = product.reviews.find(
+        (r) => r.user?.toString() === req.user._id?.toString()
+    );
 
-  if (isReviewed) {
-    product.reviews.forEach((review) => {
-      if (review.user?.toString() === req.user._id?.toString()) {
-        review.comment = comment;
-        review.rating = rating;
-      }
+    if (isReviewed) {
+        product.reviews.forEach((review) => {
+            if (review.user?.toString() === req.user._id?.toString()) {
+                review.comment = comment;
+                review.rating = rating;
+            }
+        });
+    } else {
+        product.reviews.push(review);
+        product.numofReviews = product.reviews.length;
+    }
+    product.ratings =
+        product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+        product.reviews.length;
+
+    await product.save({validateBeforeSave: false});
+    res.status(200).json({
+        success: true,
     });
-  } else {
-    product.reviews.push(review);
-    product.numofReviews = product.reviews.length;
-  }
-  product.ratings =
-    product.reviews.reduce((acc, item) => item.rating + acc, 0) /
-    product.reviews.length;
-
-  await product.save({ validateBeforeSave: false });
-  res.status(200).json({
-    success: true,
-  });
 });
 
 //Get Product Reviews => /api/v1/reviews
 exports.getProductReviews = catchAsyncErrors(async (req, res, next) => {
-  const product = await Product.findById(req.query.id);
+    const product = await Product.findById(req.query.id);
 
-  res.status(200).json({
-    success: true,
-    reviews: product.reviews,
-  });
+    res.status(200).json({
+        success: true,
+        reviews: product.reviews,
+    });
 });
 
 //Delete Product Review => /api/v1/reviews
 exports.deleteReview = catchAsyncErrors(async (req, res, next) => {
-  const product = await Product.findById(req.query.productId);
+    const product = await Product.findById(req.query.productId);
 
-  const reviews = product.reviews.filter(
-    (review) => review._id?.toString() !== req.query.id?.toString()
-  );
-  console.log(reviews);
+    const reviews = product.reviews.filter(
+        (review) => review._id?.toString() !== req.query.id?.toString()
+    );
+    console.log(reviews);
 
-  const numofReviews = reviews.length;
-  const ratings = (product.ratings =
-    product.reviews.reduce((acc, item) => item.rating + acc, 0) /
-    reviews.length);
+    const numofReviews = reviews.length;
+    const ratings = (product.ratings =
+        product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+        reviews.length);
 
-  await Product.findByIdAndUpdate(
-    req.query.productId,
-    {
-      reviews,
-      ratings,
-      numofReviews,
-    },
-    {
-      new: true,
-      runValidator: true,
-      useFindAndModify: false,
-    }
-  );
+    await Product.findByIdAndUpdate(
+        req.query.productId,
+        {
+            reviews,
+            ratings,
+            numofReviews,
+        },
+        {
+            new: true,
+            runValidator: true,
+            useFindAndModify: false,
+        }
+    );
 
-  res.status(200).json({
-    success: true,
-  });
+    res.status(200).json({
+        success: true,
+    });
 });
